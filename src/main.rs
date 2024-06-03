@@ -9,8 +9,9 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if let Ok(val) = read_dir(&args[1]) {
-        for v in val.into_iter() {
+        for (v, _s) in val.into_iter() {
             let package_json_path = std::format!("{}/{}", v.display(), "package.json");
+
 
             if let Ok(content) = read_file(package_json_path) {
                 print_package_description(v.to_str().unwrap().to_string(), content)
@@ -39,12 +40,17 @@ fn print_package_description(dir_name: String, content: String) {
     }
 }
 
-fn read_dir(path: &str) -> Result<Vec<path::PathBuf>, std::io::Error> {
+fn read_dir(path: &str) -> Result<Vec<(path::PathBuf, String)>, std::io::Error> {
     let dir = fs::read_dir(path)?;
 
-    let mut files: Vec<path::PathBuf> = Vec::new();
-    for item in dir.into_iter() {
-        files.push(item?.path());
+    let mut files: Vec<(path::PathBuf, String)> = Vec::new();
+    for item in dir.filter_map(|r| r.ok()) {
+        match item.file_name().into_string() {
+            Ok(s) => {
+              files.push((item.path(), s));
+            }
+            _ => (),
+        }
     }
 
     Ok(files)
